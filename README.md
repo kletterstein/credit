@@ -1,3 +1,3 @@
 # credit
 
-Calculation of annuity loans
+Calculation of annuity loans.

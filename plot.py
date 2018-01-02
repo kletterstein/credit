@@ -55,14 +55,16 @@ class PlotWindow(QDialog):
                    for x in kredit_verlauf]
         rest = [x.Restschuld for x in kredit_verlauf]
 
-        # create an axis
-        ax1 = self.figure.add_subplot(211)
-        ax2 = self.figure.add_subplot(212)
-
         # plot data
         color = 'cornflowerblue'
-        ax1.plot(monate, rest, linestyle='-', color=color, linewidth=1)
-        ax2.stackplot(monate, zinsen, tilgung)
+        plt.subplot(211)
+        plt.ylabel('Balance')
+        plt.plot(monate, rest, linestyle='-', color=color, linewidth=1)
+
+        plt.subplot(212)
+        plt.ylabel('Interest and Payment')
+        plt.xlabel('Months')
+        plt.stackplot(monate, zinsen, tilgung)
 
         # refresh canvas
         self.canvas.draw()
