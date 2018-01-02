@@ -62,9 +62,7 @@ class PlotWindow(QDialog):
         # plot data
         color = 'cornflowerblue'
         ax1.plot(monate, rest, linestyle='-', color=color, linewidth=1)
-
-        ax2.bar(monate, zinsen, 1, color='#d62728')
-        ax2.bar(monate, tilgung, 1, bottom=zinsen)
+        ax2.stackplot(monate, zinsen, tilgung)
 
         # refresh canvas
         self.canvas.draw()

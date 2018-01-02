@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QApplication,
     QWidget,
+    QPushButton,
     QAction,
     QTableWidget,
     QTableWidgetItem,
@@ -16,7 +17,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import pyqtSlot
  
 class TableWindow(QDialog):
  
@@ -25,8 +25,8 @@ class TableWindow(QDialog):
         self.title = 'Kreditverlauf'
         self.left = 0
         self.top = 0
-        self.width = 300
-        self.height = 200
+        self.width = 600
+        self.height = 600
         self.initUI()
  
     def initUI(self):
@@ -34,10 +34,13 @@ class TableWindow(QDialog):
         self.setGeometry(self.left, self.top, self.width, self.height)
  
         self.tableWidget = QTableWidget()
+        close_button = QPushButton('Close')
+        close_button.clicked.connect(self.close)
  
         # Add box layout, add table to box layout and add box layout to widget
         self.layout = QVBoxLayout()
-        self.layout.addWidget(self.tableWidget) 
+        self.layout.addWidget(self.tableWidget)
+        self.layout.addWidget(close_button)
         self.setLayout(self.layout) 
  
     def show_table(self, verlauf, start_date):
