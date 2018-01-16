@@ -18,15 +18,16 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
  
-class TableWindow(QDialog):
+class TableDialog(QDialog):
  
     def __init__(self, parent=None):
-        super(TableWindow, self).__init__(parent)
-        self.title = 'Kreditverlauf'
-        self.left = 0
-        self.top = 0
+        super(TableDialog, self).__init__(parent)
+        self.title = 'Schedule'
         self.width = 600
         self.height = 600
+        pg = parent.frameGeometry()
+        self.left = pg.left() + pg.width() / 2 - self.width / 2
+        self.top = pg.top() + pg.height() / 2 - self.height / 2
         self.initUI()
  
     def initUI(self):
@@ -55,10 +56,10 @@ class TableWindow(QDialog):
         self.tableWidget.setRowCount(len(verlauf))
         self.tableWidget.setColumnCount(4)
 
-        self.tableWidget.setHorizontalHeaderItem(0, QTableWidgetItem("Zins"))
-        self.tableWidget.setHorizontalHeaderItem(1, QTableWidgetItem("Tilgung"))
-        self.tableWidget.setHorizontalHeaderItem(2, QTableWidgetItem("Sondertilgung"))
-        self.tableWidget.setHorizontalHeaderItem(3, QTableWidgetItem("Restschuld"))
+        self.tableWidget.setHorizontalHeaderItem(0, QTableWidgetItem("Interest"))
+        self.tableWidget.setHorizontalHeaderItem(1, QTableWidgetItem("Rate of\nRedemption"))
+        self.tableWidget.setHorizontalHeaderItem(2, QTableWidgetItem("Unscheduled\nRedemption"))
+        self.tableWidget.setHorizontalHeaderItem(3, QTableWidgetItem("Balance"))
 
         i = 0
         for zwischenstand in verlauf:
@@ -79,7 +80,7 @@ class TableWindow(QDialog):
             self.tableWidget.setItem(i, 3, rest)
             i += 1
 
-        self.tableWidget.move(0,0)
+        # self.tableWidget.move(0,0)
 
     def calculate_date(self, start_date, month):
         """
@@ -96,7 +97,7 @@ class TableWindow(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     
-    main = TableWindow()
+    main = TableDialog()
     main.show()
 
     sys.exit(app.exec_())

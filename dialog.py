@@ -27,7 +27,8 @@ import yaml
 
 from kredit import AnnuitaetenKredit
 from plot import PlotWindow
-from table import TableWindow
+from table import TableDialog
+from soti import SotiDialog
 
 
 class CreditSettings(object):
@@ -99,6 +100,7 @@ class MainDialog(QWidget):
         self._load_button.clicked.connect(self.load_button_pressed)
         self._save_button.clicked.connect(self.save_button_pressed)
         self._calc_button.clicked.connect(self.calc_button_pressed)
+        self._soti_button.clicked.connect(self.soti_button_pressed)
         self._plot_button.clicked.connect(self.plot_button_pressed)
         self._table_button.clicked.connect(self.table_button_pressed)
         self._close_button.clicked.connect(self.close_button_pressed)
@@ -275,21 +277,24 @@ class MainDialog(QWidget):
             self._kredit_verlauf[-1].Monat % 12)
         self.kosten = kredit.GesamtKosten
         
+    def soti_button_pressed(self, e):
+        soti_dialog = SotiDialog(self)
+        soti_dialog.setModal(True)
+        soti_dialog.show()
+
     def table_button_pressed(self, e):
         if len(self._kredit_verlauf):
-            if not self._table_window:
-                self._table_window = TableWindow(self)
-                self._table_window.setModal(True)
-            self._table_window.show_table(self._kredit_verlauf, self._start_month_edit.date())
-            self._table_window.show()
+            table_dialog = TableDialog(self)
+            table_dialog.setModal(True)
+            table_dialog.show_table(self._kredit_verlauf, self._start_month_edit.date())
+            table_dialog.show()
 
     def plot_button_pressed(self, e):
         if len(self._kredit_verlauf):
-            if not self._window:
-                self._window = PlotWindow(self)
-                self._window.setModal(True)
-            self._window.plot(self._kredit_verlauf)
-            self._window.show()
+            plot_dialog = PlotWindow(self)
+            plot_dialog.setModal(True)
+            plot_dialog.plot(self._kredit_verlauf)
+            plot_dialog.show()
 
     def close_button_pressed(self):
         self._save_settings(self._credit_settings_file)
