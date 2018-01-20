@@ -80,7 +80,7 @@ class AnnuitaetenKredit(object):
         """
         Berechnet den Kreditverlauf.
 
-        :param sondertilgungen (dict int:float): Die Sondertilgungen.
+        :param sondertilgungen (dict of (int,float)): Die Sondertilgungen.
                key: Monat, value: Sondertilgung.
         :return: Kreditverlauf. Für jeden Monat wird ein Objekt vom Typ
                  KreditverlaufsZwischenstand mit den Werten

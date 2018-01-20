@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import (
     QDateEdit,
     QDateTimeEdit,
     QPushButton,
-    QFileDialog    
+    QFileDialog,
+    QDialog
 )
 from PyQt5.QtCore import (
     QDate
@@ -25,11 +26,14 @@ import os
 import pathlib
 import yaml
 
+import log
+import util
 from kredit import AnnuitaetenKredit
 from plot import PlotWindow
 from table import TableDialog
 from soti import SotiDialog
 
+_MONTH_DATE_FORMAT = "MM/yyyy"
 
 class CreditSettings(object):
     def __init__(self):
@@ -40,6 +44,7 @@ class CreditSettings(object):
         self.zins = 0.0
         self.tilgung = 0.0
         self.start_date = "01/2000"
+        self.extra_payments = []
 
 class MainDialog(QWidget):
     """
@@ -71,8 +76,10 @@ class MainDialog(QWidget):
         self._window = None
         self._table_window = None
 
+        self._settings = None
         self._kredit_verlauf = []
-
+        self._extra_payments = []
+        
         self.init_ui()
 
         # Load/initialize settings
@@ -116,8 +123,8 @@ class MainDialog(QWidget):
                 self._zins_prozent_edit.setText("{:.2f}".format(self._settings.zins))
                 self._start_month_edit.lineEdit().setText(self._settings.start_date)
             except yaml.YAMLError as ex:
-                print(ex)
-    
+                log.LOGGER.error(ex)
+
     def _save_settings(self, file_name):
         save_dir = os.path.dirname(file_name)
         if not os.path.exists(save_dir):
@@ -130,7 +137,7 @@ class MainDialog(QWidget):
             with open(file_name, mode='w') as file:
                 file.write(yaml.dump(self._settings))
         except yaml.YAMLError as ex:
-            print(ex)
+            log.LOGGER.error(ex)
 
     def init_layout(self):
         self._vbox = QVBoxLayout()
@@ -156,17 +163,17 @@ class MainDialog(QWidget):
 
     def init_input_fields(self):
         start_row = 1
-        self._data_grid.addWidget(QLabel("Loan Amount"), start_row + 0,0)
-        self._data_grid.addWidget(QLabel("Down Payment [%]"), start_row + 1, 0,)
+        self._data_grid.addWidget(QLabel("Loan Amount"), start_row + 0, 0)
+        self._data_grid.addWidget(QLabel("Down Payment [%]"), start_row + 1, 0)
         self._data_grid.addWidget(QLabel("Nominal Interest [%]"), start_row + 2, 0)
         self._data_grid.addWidget(QLabel("Start Date"), start_row + 3, 0)
         self._kredit_summe_edit = QLineEdit()
         self._tilgung_prozent_edit = QLineEdit()
         self._zins_prozent_edit = QLineEdit()
-        self._start_month_edit = QDateEdit(QDate.currentDate())     
-        self._start_month_edit.setDisplayFormat("MM/yyyy")
+        self._start_month_edit = QDateEdit(QDate.currentDate())
+        self._start_month_edit.setDisplayFormat(_MONTH_DATE_FORMAT)
         self._start_month_edit.currentSection = QDateTimeEdit.MonthSection
-        # self._start_month_edit.setCalendarPopup(True)        
+        # self._start_month_edit.setCalendarPopup(True)
         self._data_grid.addWidget(self._kredit_summe_edit, start_row + 0, 1)
         self._data_grid.addWidget(self._tilgung_prozent_edit, start_row + 1, 1)
         self._data_grid.addWidget(self._zins_prozent_edit, start_row + 2, 1)
@@ -180,7 +187,7 @@ class MainDialog(QWidget):
         hbox.addWidget(self._calc_button)
         hbox.addWidget(self._soti_button)
         self._data_grid.addLayout(hbox, start_row + 0, 0, 1, 2)
-       
+
     def init_output_fields(self):
         start_row = 6
         self._monats_rate_label = QLabel("...")
@@ -270,31 +277,40 @@ class MainDialog(QWidget):
 
     def calc_button_pressed(self, e):
         kredit = AnnuitaetenKredit(self.summe, self.tilgung, self.zins)
-        self._kredit_verlauf = kredit.berechne_kreditverlauf()
+        # Convert absolute to relative months
+        extra_payments = {}
+        for payment in self._settings.extra_payments:
+            month = util.month_diff(
+                payment[0],
+                QDate.fromString(self._settings.start_date, _MONTH_DATE_FORMAT))
+            extra_payments[month] = payment[1]
+        self._kredit_verlauf = kredit.berechne_kreditverlauf(extra_payments)
         self.monatsrate = kredit.Monatsrate
         self.laufzeit = "{0:d} Jahre {1:d} Monate".format(
             int(self._kredit_verlauf[-1].Monat) // 12,
             self._kredit_verlauf[-1].Monat % 12)
         self.kosten = kredit.GesamtKosten
-        
+
     def soti_button_pressed(self, e):
         soti_dialog = SotiDialog(self)
         soti_dialog.setModal(True)
-        soti_dialog.show()
+        ret = soti_dialog.exec()
+        if ret == QDialog.Accepted:
+            self._settings.extra_payments = soti_dialog.payments
 
     def table_button_pressed(self, e):
         if len(self._kredit_verlauf):
             table_dialog = TableDialog(self)
             table_dialog.setModal(True)
             table_dialog.show_table(self._kredit_verlauf, self._start_month_edit.date())
-            table_dialog.show()
+            table_dialog.exec()
 
     def plot_button_pressed(self, e):
         if len(self._kredit_verlauf):
             plot_dialog = PlotWindow(self)
             plot_dialog.setModal(True)
             plot_dialog.plot(self._kredit_verlauf)
-            plot_dialog.show()
+            plot_dialog.exec()
 
     def close_button_pressed(self):
         self._save_settings(self._credit_settings_file)
