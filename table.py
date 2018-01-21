@@ -3,6 +3,11 @@
 """
 Shows a table with the credit schedule.
 """
+
+__author__ = "Sofie & Bernd Krietenstein"
+__copyright__ = "Copyright (C) 2018 Sofie & Bernd Krietenstein"
+__license__ = "see LICENSE file"
+
 import sys
 
 from PyQt5.QtWidgets import (

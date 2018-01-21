@@ -4,6 +4,10 @@
 Main dialog of the loan calculator.
 """
 
+__author__ = "Sofie & Bernd Krietenstein"
+__copyright__ = "Copyright (C) 2018 Sofie & Bernd Krietenstein"
+__license__ = "see LICENSE file"
+
 import os
 import pathlib
 import yaml

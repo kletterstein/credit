@@ -3,6 +3,11 @@
 """
 Collect error messages.
 """
+
+__author__ = "Sofie & Bernd Krietenstein"
+__copyright__ = "Copyright (C) 2018 Sofie & Bernd Krietenstein"
+__license__ = "see LICENSE file"
+
 import logging
 
 _LEVEL = logging.DEBUG

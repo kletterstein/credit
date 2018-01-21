@@ -4,6 +4,10 @@
 Calcuate the schedule of an annuity loan.
 """
 
+__author__ = "Sofie & Bernd Krietenstein"
+__copyright__ = "Copyright (C) 2018 Sofie & Bernd Krietenstein"
+__license__ = "see LICENSE file"
+
 class KreditverlaufsZwischenstand(object):
     """
     One line in a credit schedule.

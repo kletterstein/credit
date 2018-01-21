@@ -4,6 +4,10 @@
 Provides utility functions.
 """
 
+__author__ = "Sofie & Bernd Krietenstein"
+__copyright__ = "Copyright (C) 2018 Sofie & Bernd Krietenstein"
+__license__ = "see LICENSE file"
+
 from PyQt5.QtCore import (
     QDate
 )
