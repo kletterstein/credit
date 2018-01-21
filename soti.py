@@ -31,6 +31,7 @@ from PyQt5.QtGui import (
     QIcon
 )
 
+import conf
 import log
  
 class SotiDialog(QDialog):
@@ -51,23 +52,22 @@ class SotiDialog(QDialog):
         self._table_widget = None
         
         self.initUI()
+
+        if sotis:
+            for payment in sotis:
+                self._add_payment(payment)
+
+        self._table_widget.clearFocus()
  
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
  
         self._table_widget = QTableWidget()
-        self._table_widget.setRowCount(1)
+        # self._table_widget.setRowCount(1)
         self._table_widget.setColumnCount(2)
         self._table_widget.setHorizontalHeaderItem(0, QTableWidgetItem("Date"))
         self._table_widget.setHorizontalHeaderItem(1, QTableWidgetItem("Payment"))
-
-        # Add first row
-        month_edit = QDateEdit(QDate.currentDate())
-        month_edit.setDisplayFormat("MM/yyyy")
-        month_edit.currentSection = QDateTimeEdit.MonthSection
-        self._table_widget.setCellWidget(0, 0, month_edit)
-        self._table_widget.setItem(0, 1, QTableWidgetItem("0.0"))
 
         add_button = QPushButton('+')
         add_button.clicked.connect(self._add_payment)
@@ -100,23 +100,28 @@ class SotiDialog(QDialog):
             QHeaderView.Stretch)
 
         # Cosmetics
-        #palette = self._table_widget.horizontalHeader().palette()
-        #palette.setColor( QPalette.Normal, QPalette.Window, Qt.lightGray)
-        #self._table_widget.horizontalHeader().setPalette( palette )
         self._table_widget.horizontalHeader().setStyleSheet(
             "::section { background-color:lightGray }")
 
-    def _add_payment(self):
+    def _add_payment(self, payment=None):
         """
         Add a line with a new extra payment.
+
+        :param payment (tuple(str, float)): Extra payment for a month.
         """
         self._table_widget.insertRow(self._table_widget.rowCount())
         current_row = self._table_widget.rowCount() - 1
-        month_edit = QDateEdit(QDate.currentDate())
-        month_edit.setDisplayFormat("MM/yyyy")
+        if payment:
+            month = QDate.fromString(payment[0], conf.DATE_FORMAT)
+            amount = payment[1]
+        else:
+            month = QDate.currentDate()
+            amount = 0.0
+        month_edit = QDateEdit(month)
+        month_edit.setDisplayFormat(conf.DATE_FORMAT)
         month_edit.currentSection = QDateTimeEdit.MonthSection
         self._table_widget.setCellWidget(current_row, 0, month_edit)
-        self._table_widget.setItem(current_row, 1, QTableWidgetItem("0.0"))
+        self._table_widget.setItem(current_row, 1, QTableWidgetItem(str(amount)))
 
     def _remove_payment(self):
         """
@@ -183,7 +188,7 @@ class SotiDialog(QDialog):
         try:
             for row_no in range(self._table_widget.rowCount()):
                 date_edit = self._table_widget.cellWidget(row_no, 0)
-                date = date_edit.date()
+                date = date_edit.date().toString(conf.DATE_FORMAT)
                 amount = float(self._table_widget.item(row_no, 1).text())
                 payment_list.append((date, amount))
         except Exception as ex:

@@ -1,10 +1,13 @@
 #! /usr/bin/python
 # -*-  coding: utf-8 -*-
 """
-Der Hauptdialog für den Annuitätendarlehensrechner.
+Main dialog of the loan calculator.
 """
 
-import matplotlib.pylab as pylab
+import os
+import pathlib
+import yaml
+
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -17,15 +20,14 @@ from PyQt5.QtWidgets import (
     QDateTimeEdit,
     QPushButton,
     QFileDialog,
-    QDialog
+    QDialog,
+    QMessageBox
 )
 from PyQt5.QtCore import (
     QDate
 )
-import os
-import pathlib
-import yaml
 
+import conf
 import log
 import util
 from kredit import AnnuitaetenKredit
@@ -33,22 +35,28 @@ from plot import PlotWindow
 from table import TableDialog
 from soti import SotiDialog
 
-_MONTH_DATE_FORMAT = "MM/yyyy"
-
 class CreditSettings(object):
-    def __init__(self):
+    """
+    Stores the credit settings.
+    """
+    def __init__(self,
+            kreditsumme=0.0,
+            zins=0.0,
+            tilgung=0.0,
+            start_date="01/2000",
+            extra_payments=[]):
         """
-        Konstruktor.
+        C'tor.
         """
-        self.kreditsumme = 0.0
-        self.zins = 0.0
-        self.tilgung = 0.0
-        self.start_date = "01/2000"
-        self.extra_payments = []
+        self.kreditsumme = kreditsumme
+        self.zins = zins
+        self.tilgung = tilgung
+        self.start_date = start_date
+        self.extra_payments = extra_payments
 
 class MainDialog(QWidget):
     """
-    Der Hauptdialog für den Annuitätendarlehensrechner.
+    Main dialog of the loan calculator.
     """
     def __init__(self):
         super().__init__()
@@ -76,6 +84,7 @@ class MainDialog(QWidget):
         self._window = None
         self._table_window = None
 
+        self._current_project_file_name = None
         self._settings = None
         self._kredit_verlauf = []
         self._extra_payments = []
@@ -93,7 +102,7 @@ class MainDialog(QWidget):
         self._load_settings(self._credit_settings_file)
 
     def init_ui(self):
-        self.setGeometry(300, 300, 300, 220)
+        self.setGeometry(300, 300, 300, 300)
         self.setWindowTitle('Annuity Loan Calculator')
 
         self.init_layout()
@@ -127,17 +136,21 @@ class MainDialog(QWidget):
 
     def _save_settings(self, file_name):
         save_dir = os.path.dirname(file_name)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        self._settings.kreditsumme = float(self._kredit_summe_edit.text())
-        self._settings.zins = float(self._zins_prozent_edit.text())
-        self._settings.tilgung = float(self._tilgung_prozent_edit.text())
-        self._settings.start_date = self._start_month_edit.lineEdit().text()
-        try:
-            with open(file_name, mode='w') as file:
-                file.write(yaml.dump(self._settings))
-        except yaml.YAMLError as ex:
-            log.LOGGER.error(ex)
+        if os.path.exists(save_dir):
+            self._settings.kreditsumme = float(self._kredit_summe_edit.text())
+            self._settings.zins = float(self._zins_prozent_edit.text())
+            self._settings.tilgung = float(self._tilgung_prozent_edit.text())
+            self._settings.start_date = self._start_month_edit.lineEdit().text()
+            try:
+                with open(file_name, mode='w') as file:
+                    file.write(yaml.dump(self._settings))
+            except yaml.YAMLError as ex:
+                log.LOGGER.error(ex)
+        else:
+            QMessageBox.warning(
+                self,
+                "Project coud not be saved",
+                "Target directory {} does not exist".format(save_dir))
 
     def init_layout(self):
         self._vbox = QVBoxLayout()
@@ -171,7 +184,7 @@ class MainDialog(QWidget):
         self._tilgung_prozent_edit = QLineEdit()
         self._zins_prozent_edit = QLineEdit()
         self._start_month_edit = QDateEdit(QDate.currentDate())
-        self._start_month_edit.setDisplayFormat(_MONTH_DATE_FORMAT)
+        self._start_month_edit.setDisplayFormat(conf.DATE_FORMAT)
         self._start_month_edit.currentSection = QDateTimeEdit.MonthSection
         # self._start_month_edit.setCalendarPopup(True)
         self._data_grid.addWidget(self._kredit_summe_edit, start_row + 0, 1)
@@ -214,21 +227,21 @@ class MainDialog(QWidget):
     @property
     def summe(self):
         """
-        :returns Betrag des Kredits in Euro
+        :returns loan amount
         """
         return float(self._kredit_summe_edit.text())
 
     @property
     def tilgung(self):
         """
-        :returns Tilgungssatz in %
+        :returns redemption rate in %
         """
         return float(self._tilgung_prozent_edit.text())
 
     @property
     def zins(self):
         """
-        :returns Zinssatz in %
+        :returns nominal interest in %
         """
         return float(self._zins_prozent_edit.text())
 
@@ -255,25 +268,35 @@ class MainDialog(QWidget):
     @kosten.setter
     def kosten(self, x):
         """
-        :param x (float): Gesamtkosten des Kredits.
+        :param x (float): cost of the credit (sum of interest payments).
         """
         self._kosten_label.setText("{0:.2f}".format(x))
 
     def load_button_pressed(self, e):
+        if self._current_project_file_name:
+            start_file = self._current_project_file_name
+        else:
+            start_file = str(pathlib.Path.home())
         file_name = QFileDialog.getOpenFileName(
             self,
             "Open Project File",
-            str(pathlib.Path.home()),
+            start_file,
             "Credit Project Files (*.yaml)")[0]
         self._load_settings(file_name)
+        self._current_project_file_name = file_name
 
     def save_button_pressed(self, e):
+        if self._current_project_file_name:
+            start_file = self._current_project_file_name
+        else:
+            start_file = str(pathlib.Path.home())
         file_name = QFileDialog.getSaveFileName(
             self,
             "Save Project File",
-            str(pathlib.Path.home()),
+            start_file,
             "Credit Project Files (*.yaml)")[0]
         self._save_settings(file_name)
+        self._current_project_file_name = file_name
 
     def calc_button_pressed(self, e):
         kredit = AnnuitaetenKredit(self.summe, self.tilgung, self.zins)
@@ -281,19 +304,18 @@ class MainDialog(QWidget):
         extra_payments = {}
         for payment in self._settings.extra_payments:
             month = util.month_diff(
-                payment[0],
-                QDate.fromString(self._settings.start_date, _MONTH_DATE_FORMAT))
+                QDate.fromString(payment[0], conf.DATE_FORMAT),
+                QDate.fromString(self._settings.start_date, conf.DATE_FORMAT))
             extra_payments[month] = payment[1]
         self._kredit_verlauf = kredit.berechne_kreditverlauf(extra_payments)
         self.monatsrate = kredit.Monatsrate
-        self.laufzeit = "{0:d} Jahre {1:d} Monate".format(
+        self.laufzeit = "{0:d} Years {1:d} Months".format(
             int(self._kredit_verlauf[-1].Monat) // 12,
             self._kredit_verlauf[-1].Monat % 12)
         self.kosten = kredit.GesamtKosten
 
     def soti_button_pressed(self, e):
-        soti_dialog = SotiDialog(self)
-        soti_dialog.setModal(True)
+        soti_dialog = SotiDialog(self, self._settings.extra_payments)
         ret = soti_dialog.exec()
         if ret == QDialog.Accepted:
             self._settings.extra_payments = soti_dialog.payments
@@ -301,14 +323,12 @@ class MainDialog(QWidget):
     def table_button_pressed(self, e):
         if len(self._kredit_verlauf):
             table_dialog = TableDialog(self)
-            table_dialog.setModal(True)
             table_dialog.show_table(self._kredit_verlauf, self._start_month_edit.date())
             table_dialog.exec()
 
     def plot_button_pressed(self, e):
         if len(self._kredit_verlauf):
             plot_dialog = PlotWindow(self)
-            plot_dialog.setModal(True)
             plot_dialog.plot(self._kredit_verlauf)
             plot_dialog.exec()
 

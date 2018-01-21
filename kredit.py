@@ -1,66 +1,67 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Berechnung des Verlaufs von Annitätendarlehen.
+Calcuate the schedule of an annuity loan.
 """
 
 class KreditverlaufsZwischenstand(object):
     """
-    Beschreibt eine Zeile in einem Kreditverlauf.
+    One line in a credit schedule.
     """
     def __init__(self, monat, zins, tilgung, soti, restschuld):
         """
-        Konstruktor.
+        C'tor.
 
-        :param monat (int): Nummer des Monats im Kreditverlauf
-        :param zins (float): Zinsanteil in der Monatsrate.
-        :param tilgung (float): Tilgungsteil in der Monatsrate.
-        :param soti (float): In diesem Monat gezahlte Sondertilgung.
-        :param restschuld (float): Aktueller Saldo des Kreditkontos nach Abzug
-               der Tilgungszahlungen.
+        :param monat (int): number of month in a credit schedule
+        :param zins (float): interest part of this month's rate.
+        :param tilgung (float): redemption part of this month's rate.
+        :param soti (float): extra payment in this month.
+        :param restschuld (float): Current balance after this month's rate was paid.
         """
         self.Monat = monat
         self.Zinsanteil = zins
         self.Tilgungsanteil = tilgung
-        self.Sondertilgunsanteil = soti
+        self.Sondertilgungsanteil = soti
         self.Restschuld = restschuld
 
 
 class AnnuitaetenKredit(object):
     """
-    Berechnet einen Kreditverlauf unter Berücksichtigung von Sondertilgungen.
+    Calulator for annuity loans.
     """
 
     def __init__(self, betrag, tilgung, zins):
         """
-        Initialisiert den Kreditrechner
+        Initializes the annuity loan calcuator
 
-        :param betrag (float): Der Betrag der Darlehenssumme
-        :param tilgung (float): Der Tilgungssatz in Prozent
-        :param zins (float): Der nominale Zinssatz
+        :param betrag (float): loan amount
+        :param tilgung (float): redemption rate in %
+        :param zins (float): nominal interest in %
         """
         self._t0 = tilgung / 100.0
         self._z = zins / 100.0
         self._s0 = betrag
 
-        self._zges = 0.0 # Zinssumme
-        self._m = 0 # Monat
-        self._ms  = 0.0 # Monatssumme
-        self._mtil = 0.0 # aktuelle Tilgung
-        self._mzins = 0.0 # aktueller Zinsbetrag
-        self._s  = self._s0 # verbliebene Summe
+        self._zges = 0.0 # sum of interest
+        self._m = 0 # month
+        self._ms  = 0.0 # month's rate
+        self._mtil = 0.0 # current redemption amount
+        self._stil = 0.0 # extra redemption
+        self._mzins = 0.0 # current interest amount
+        self._s  = self._s0 # balance
 
-        self._verlauf = [] # Liste der einzelnen Beträge des Kreditverlaufs
+        self._verlauf = [] # list of KreditverlaufsZwischenstand objects
 
     def _monatsschritt(self, sondertilgung=0.0):
         """
-        Berechnet alle Werte für den naechsten Monat.
+        Calulates all values for next month.
 
-        :param sondertilgung (float): Sondertilgung für diesen Monat
+        :param sondertilgung (float): extra payment for this month
         """
+        self._stil = sondertilgung
         if self._m == 1:
             self._ms = (self._s0 * self._t0 + self._s0 * self._z) / 12
-            self._mtil = (self._s0 * self._t0) / 12 + sondertilgung
+            self._mtil = (self._s0 * self._t0) / 12 + self._stil
             if self._mtil > self._s:
                 self._mtil = self._s
             self._mzins = self._s0 * self._z / 12
@@ -69,7 +70,7 @@ class AnnuitaetenKredit(object):
             # self._zeff = self._z
         else:
             self._mzins = self._s * self._z / 12
-            self._mtil = self._ms - self._mzins + sondertilgung
+            self._mtil = self._ms - self._mzins + self._stil
             if self._mtil > self._s:
                 self._mtil = self._s
             # self._teff = self._mtil / self._s0 * 12
@@ -78,38 +79,37 @@ class AnnuitaetenKredit(object):
 
     def berechne_kreditverlauf(self, sondertilgungen={}):
         """
-        Berechnet den Kreditverlauf.
+        Calculate schedule.
 
-        :param sondertilgungen (dict of (int,float)): Die Sondertilgungen.
-               key: Monat, value: Sondertilgung.
-        :return: Kreditverlauf. Für jeden Monat wird ein Objekt vom Typ
-                 KreditverlaufsZwischenstand mit den Werten
-                 (Monat, Zinsanteil, Tilgungsanteil, Sondertilgung, Restschuld)
-                 geliefert.
-        :rtype: Liste von KreditverlaufsZwischenstand-Objekten.
+        :param sondertilgungen (dict of (int,float)): Extra payments.
+               key: month, value: amount.
+        :return: schedule. A KreditverlaufsZwischenstand object is created for
+                 each month containing the values
+                 (month, interest, redemption, extra payment, balance)
+        :rtype: list of KreditverlaufsZwischenstand objects.
         """
         self._m = 1
         while self._s > 0:
-            if self._m in sondertilgungen:
-                self._monatsschritt(sondertilgungen[self._m])
+            if self._m - 1 in sondertilgungen:
+                self._monatsschritt(sondertilgungen[self._m - 1])
             else:
                 self._monatsschritt()
             self._verlauf.append(
                 KreditverlaufsZwischenstand(
-                    self._m, self._mzins, self._mtil, 0, self._s))
+                    self._m, self._mzins, self._mtil - self._stil, self._stil, self._s))
             self._m += 1
         return self._verlauf
 
     @property
     def GesamtKosten(self):
         """
-        Summe der Zinszahlungen.
+        Sum of interest payments.
         """
         return self._zges
 
     @property
     def Monatsrate(self):
         """
-        Betrag der monatlichen Rate.
+        Monthly rate.
         """
         return self._verlauf[0].Zinsanteil + self._verlauf[0].Tilgungsanteil

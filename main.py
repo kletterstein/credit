@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*-  coding: utf-8 -*-
 """
-Root file für die GUI-Anwendung.
+Root file for GUI application.
 """
 
 import sys

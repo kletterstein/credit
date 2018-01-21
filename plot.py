@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*-  coding: utf-8 -*-
 """
-Window für die grafische Anzeige eines Kreditverlaufs.
+Window showing a graph of a credit schedule.
 """
 
 import sys
@@ -44,15 +44,16 @@ class PlotWindow(QDialog):
 
     def plot(self, kredit_verlauf):
         '''
-        Kreditverlauf zeichnen
+        Draw schedule.
         '''
         # instead of ax.hold(False)
         self.figure.clear()
 
         monate = [x.Monat for x in kredit_verlauf]
         zinsen = [x.Zinsanteil for x in kredit_verlauf]
-        tilgung = [(x.Tilgungsanteil + x.Sondertilgunsanteil)
-                   for x in kredit_verlauf]
+        # tilgung = [(x.Tilgungsanteil + x.Sondertilgungsanteil)
+        #            for x in kredit_verlauf]
+        tilgung = [x.Tilgungsanteil for x in kredit_verlauf]
         rest = [x.Restschuld for x in kredit_verlauf]
 
         # plot data
