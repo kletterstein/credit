@@ -93,6 +93,10 @@ class AnnuitaetenKredit(object):
         :rtype: list of KreditverlaufsZwischenstand objects.
         """
         self._m = 1
+        if self._s == 0.0:
+            self._verlauf.append(
+                KreditverlaufsZwischenstand(
+                    self._m, 0.0, 0.0, 0.0, 0.0))
         while self._s > 0:
             if self._m - 1 in sondertilgungen:
                 self._monatsschritt(sondertilgungen[self._m - 1])

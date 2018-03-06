@@ -141,10 +141,22 @@ class MainDialog(QWidget):
     def _save_settings(self, file_name):
         save_dir = os.path.dirname(file_name)
         if os.path.exists(save_dir):
-            self._settings.kreditsumme = float(self._kredit_summe_edit.text())
-            self._settings.zins = float(self._zins_prozent_edit.text())
-            self._settings.tilgung = float(self._tilgung_prozent_edit.text())
-            self._settings.start_date = self._start_month_edit.lineEdit().text()
+            try:
+                self._settings.kreditsumme = float(self._kredit_summe_edit.text())
+            except ValueError:
+                self._settings.kreditsumme = 0.0
+            try:
+                self._settings.zins = float(self._zins_prozent_edit.text())
+            except ValueError:
+                self._settings.zins = 5.0
+            try:
+                self._settings.tilgung = float(self._tilgung_prozent_edit.text())
+            except ValueError:
+                self._settings.tilgung = 1.0
+            try:
+                self._settings.start_date = self._start_month_edit.lineEdit().text()
+            except ValueError:
+                self._settings.start_date = "2000-01-01"
             try:
                 with open(file_name, mode='w') as file:
                     file.write(yaml.dump(self._settings))
