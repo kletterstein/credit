@@ -10,6 +10,8 @@ Requirements:
   * pyaml
   * PyQt5
 
+```
     pip install matplotlib
     pip install pyaml
     pip install pyqt5
+```
